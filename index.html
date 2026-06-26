@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadowing Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --ink: #1a1a2e; --paper: #f7f5f0; --accent: #4a6fa5;
+    --accent-light: #e8eef7; --muted: #8a8a9a; --border: #dddbd4;
+    --card: #ffffff; --a-color: #2d6a4f; --b-color: #6b3fa0;
+    --a-bg: #eaf4ee; --b-bg: #f2ecfb; --speed-bg: #fafaf8;
+  }
+  [data-theme="dark"] {
+    --ink: #e8e6e1; --paper: #141418; --accent: #6b9fd4;
+    --accent-light: #1e2a38; --muted: #666672; --border: #2e2e38;
+    --card: #1e1e26; --a-color: #5bbf85; --b-color: #b07ee8;
+    --a-bg: #1a2e22; --b-bg: #251a35; --speed-bg: #191920;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; padding: 1.5rem 1rem 4rem; transition: background 0.2s, color 0.2s; }
+
+  .bookmark-btn {
+    width: 24px; height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    color: var(--border);
+    transition: color 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .bookmark-btn:hover { color: var(--muted); transform: scale(1.1); }
+  .bookmark-btn.marked { color: #e53935; }
+  .bookmark-btn svg { width: 16px; height: 20px; }
+
+  /* Header */
+  header {
+    max-width: 660px;
+    margin: 0 auto 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .site-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .dark-toggle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .dark-toggle svg { width: 16px; height: 16px; }
+  .dark-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Cards */
+  .lessons { max-width: 660px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+  .lesson-card { background: var(--card); border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: box-shadow 0.2s, background 0.2s, border-color 0.2s; }
+  .lesson-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+  /* Lesson header */
+  .lesson-header { padding: 0.55rem 1rem 0.55rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; justify-content: space-between; }
+  .header-left { display: flex; align-items: center; gap: 0.6rem; }
+  .lesson-num { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+
+  /* Hide text toggle per card */
+  .hide-toggle {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .hide-toggle.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* Play all button */
+  .play-all-btn { display: flex; align-items: center; gap: 0.35rem; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.25rem 0.7rem; border-radius: 99px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .play-all-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn.playing { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .play-all-btn svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+  /* Utterances */
+  .utterances { display: flex; flex-direction: column; }
+  .utterance { display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .utterance:last-child { border-bottom: none; }
+  .utterance.is-playing { background: var(--accent-light); }
+  .speaker-badge { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
+  .speaker-A .speaker-badge { background: var(--a-bg); color: var(--a-color); }
+  .speaker-B .speaker-badge { background: var(--b-bg); color: var(--b-color); }
+  .text-area { flex: 1; }
+  .utterance-text { font-size: 0.95rem; line-height: 1.6; transition: opacity 0.25s, filter 0.25s; }
+  .utterance-text.hidden { opacity: 0; filter: blur(6px); pointer-events: none; user-select: none; }
+  .play-btn { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; background: var(--accent-light); color: var(--accent); }
+  .play-btn:hover { background: var(--accent); color: #fff; transform: scale(1.05); }
+  .play-btn.playing { background: var(--accent); color: #fff; }
+  .play-btn svg { width: 15px; height: 15px; }
+
+  /* Speed controls */
+  .speed-controls { display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1.25rem; border-top: 1px solid var(--border); background: var(--speed-bg); transition: background 0.2s; }
+  .speed-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); margin-right: 0.2rem; }
+  .speed-btn { font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 0.18rem 0.45rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .speed-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .repeat-btn { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; padding: 0.18rem 0.55rem; border-radius: 6px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .repeat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="site-title">Shadowing 1</span>
+  <div class="header-right">
+    <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="切換深色模式">
+      <svg id="darkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="lessons" id="lessons"></div>
+
+<script>
+const data = [
+  {
+    id: "1-1",
+    utterances: [
+      { speaker: "A", text: "待ちに待った旅行もいよいよ明日だね。", audio: "audio/01-01_1.mp3" },
+      { speaker: "B", text: "うん、あと一日、仕事頑張ろう。早く明日が来てくれないかな。", audio: "audio/01-01_2.mp3" }
+    ]
+  },
+  {
+    id: "1-2",
+    utterances: [
+      { speaker: "A", text: "ゆいこっちこっち待ってたよ。また会えて嬉しい。", audio: "audio/01-02_1.mp3" },
+      { speaker: "B", text: "私もやっと会えたね。この日を指折り数えて待ってたんだ。", audio: "audio/01-02_2.mp3" }
+    ]
+  },
+  {
+    id: "1-3",
+    utterances: [
+      { speaker: "A", text: "わぁ、来た、来た。盛り付けもきれいで、いい香り。", audio: "audio/01-03_1.mp3" },
+      { speaker: "B", text: "このエビの天ぷら、外はサクサク、中はしっとりしてておいしい", audio: "audio/01-03_2.mp3" }
+    ]
+  },
+  {
+    id: "1-4",
+    utterances: [
+      { speaker: "A", text: "山頂からの景色、すごく美しいね。こんな景色初めて見た。", audio: "audio/01-04_1.mp3" },
+      { speaker: "B", text: "うん。美しすぎて涙が出るね。私もこんな景色見たことない。", audio: "audio/01-04_2.mp3" }
+    ]
+  }
+];
+
+let speeds = {};
+let repeats = {};
+let textHidden = {};
+let currentAudio = null;
+let currentBtn = null;
+let currentRow = null;
+let playAllQueue = null;
+let isDark = false;
+
+const PLAY_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>';
+const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const STOP_ICON  = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14"/></svg>';
+
+const MOON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+const SUN_SVG  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+const BOOKMARK_SVG = `<svg viewBox="0 0 16 20" fill="currentColor"><path d="M2 0h12a2 2 0 0 1 2 2v18l-8-4-8 4V2a2 2 0 0 1 2-2z"/></svg>`;
+
+// Load bookmarks from localStorage
+let bookmarks = JSON.parse(localStorage.getItem('shadowing-bookmarks') || '{}');
+
+function toggleDark() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('darkToggle').innerHTML = isDark ? SUN_SVG : MOON_SVG;
+}
+
+function toggleBookmark(lessonId) {
+  bookmarks[lessonId] = !bookmarks[lessonId];
+  localStorage.setItem('shadowing-bookmarks', JSON.stringify(bookmarks));
+  const btn = document.getElementById('bookmark-' + lessonId);
+  btn.classList.toggle('marked', bookmarks[lessonId]);
+  // Clear others so only one bookmark is active at a time
+  if (bookmarks[lessonId]) {
+    data.forEach(l => {
+      if (l.id !== lessonId && bookmarks[l.id]) {
+        bookmarks[l.id] = false;
+        const b = document.getElementById('bookmark-' + l.id);
+        if (b) b.classList.remove('marked');
+      }
+    });
+    localStorage.setItem('shadowing-bookmarks', JSON.stringify(bookmarks));
+  }
+}
+
+function stopAll() {
+  if (currentAudio) { currentAudio.onended = null; currentAudio.pause(); currentAudio = null; }
+  if (currentBtn) { currentBtn.innerHTML = PLAY_ICON; currentBtn.classList.remove('playing'); currentBtn = null; }
+  if (currentRow) { currentRow.classList.remove('is-playing'); currentRow = null; }
+  if (playAllQueue) {
+    const allBtn = document.getElementById('playall-' + playAllQueue.lessonId);
+    if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+    playAllQueue = null;
+  }
+}
+
+function playAudio(lessonId, uttIndex, fromPlayAll) {
+  const lesson = data.find(l => l.id === lessonId);
+  const btn = document.getElementById('btn-' + lessonId + '-' + uttIndex);
+  const row = document.getElementById('utt-' + lessonId + '-' + uttIndex);
+  const isSame = currentAudio && currentAudio._lessonId === lessonId && currentAudio._uttIndex === uttIndex;
+
+  stopAll();
+  if (isSame && !fromPlayAll) return;
+
+  const audio = new Audio(lesson.utterances[uttIndex].audio);
+  audio.playbackRate = speeds[lessonId];
+  audio._lessonId = lessonId;
+  audio._uttIndex = uttIndex;
+
+  btn.innerHTML = PAUSE_ICON;
+  btn.classList.add('playing');
+  row.classList.add('is-playing');
+  currentAudio = audio; currentBtn = btn; currentRow = row;
+
+  audio.play().catch(e => console.error('Play failed:', e));
+
+  audio.onended = () => {
+    btn.innerHTML = PLAY_ICON; btn.classList.remove('playing');
+    row.classList.remove('is-playing');
+    currentAudio = null; currentBtn = null; currentRow = null;
+
+    if (playAllQueue && playAllQueue.lessonId === lessonId) {
+      const nextIndex = uttIndex + 1;
+      if (nextIndex < lesson.utterances.length) {
+        playAllQueue.index = nextIndex;
+        setTimeout(() => playAudio(lessonId, nextIndex, true), 300);
+      } else {
+        const allBtn = document.getElementById('playall-' + lessonId);
+        if (allBtn) { allBtn.innerHTML = PLAY_ICON + ' 全部再生'; allBtn.classList.remove('playing'); }
+        playAllQueue = null;
+        if (repeats[lessonId]) setTimeout(() => playAll(lessonId), 400);
+      }
+    } else if (repeats[lessonId] && !playAllQueue) {
+      playAudio(lessonId, uttIndex, false);
+    }
+  };
+}
+
+function playAll(lessonId) {
+  const allBtn = document.getElementById('playall-' + lessonId);
+  if (playAllQueue && playAllQueue.lessonId === lessonId) { stopAll(); return; }
+  stopAll();
+  playAllQueue = { lessonId, index: 0 };
+  allBtn.innerHTML = STOP_ICON + ' 停止';
+  allBtn.classList.add('playing');
+  playAudio(lessonId, 0, true);
+}
+
+function setSpeed(lessonId, speed) {
+  speeds[lessonId] = speed;
+  if (currentAudio && currentAudio._lessonId === lessonId) currentAudio.playbackRate = speed;
+  [0.75, 1.0, 1.25, 1.5].forEach(s => {
+    const b = document.getElementById('speed-' + lessonId + '-' + s.toString().replace('.', '_'));
+    if (b) b.classList.toggle('active', s === speed);
+  });
+}
+
+function toggleRepeat(lessonId) {
+  repeats[lessonId] = !repeats[lessonId];
+  document.getElementById('repeat-' + lessonId).classList.toggle('active', repeats[lessonId]);
+}
+
+function toggleText(lessonId) {
+  textHidden[lessonId] = !textHidden[lessonId];
+  const hidden = textHidden[lessonId];
+  document.querySelectorAll('#card-' + lessonId.replace('-','_') + ' .utterance-text')
+    .forEach(el => el.classList.toggle('hidden', hidden));
+  const btn = document.getElementById('hide-' + lessonId);
+  btn.textContent = hidden ? 'テキスト表示' : 'テキスト隠す';
+  btn.classList.toggle('active', hidden);
+}
+
+function buildUI() {
+  const container = document.getElementById('lessons');
+  data.forEach(lesson => {
+    speeds[lesson.id] = 1.0;
+    repeats[lesson.id] = false;
+    textHidden[lesson.id] = false;
+
+    const card = document.createElement('div');
+    card.className = 'lesson-card';
+    card.id = 'card-' + lesson.id.replace('-', '_');
+
+    const uttHTML = lesson.utterances.map((u, i) => `
+      <div class="utterance speaker-${u.speaker}" id="utt-${lesson.id}-${i}">
+        <div class="speaker-badge">${u.speaker}</div>
+        <div class="text-area">
+          <div class="utterance-text" id="text-${lesson.id}-${i}">${u.text}</div>
+        </div>
+        <button class="play-btn" id="btn-${lesson.id}-${i}" onclick="playAudio('${lesson.id}', ${i}, false)" aria-label="再生">
+          ${PLAY_ICON}
+        </button>
+      </div>
+    `).join('');
+
+    const speedBtns = [0.75, 1.0, 1.25, 1.5].map(s =>
+      `<button class="speed-btn ${s === 1.0 ? 'active' : ''}" id="speed-${lesson.id}-${s.toString().replace('.', '_')}" onclick="setSpeed('${lesson.id}', ${s})">${s}x</button>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="lesson-header">
+        <div class="header-left">
+          <button class="bookmark-btn ${bookmarks[lesson.id] ? 'marked' : ''}" id="bookmark-${lesson.id}" onclick="toggleBookmark('${lesson.id}')" title="學習進度書籤" aria-label="bookmark">
+            ${BOOKMARK_SVG}
+          </button>
+          <span class="lesson-num">${lesson.id}</span>
+          <button class="hide-toggle" id="hide-${lesson.id}" onclick="toggleText('${lesson.id}')">テキスト隠す</button>
+        </div>
+        <button class="play-all-btn" id="playall-${lesson.id}" onclick="playAll('${lesson.id}')">
+          ${PLAY_ICON} 全部再生
+        </button>
+      </div>
+      <div class="utterances">${uttHTML}</div>
+      <div class="speed-controls">
+        <span class="speed-label">速度</span>${speedBtns}
+        <button class="repeat-btn" id="repeat-${lesson.id}" onclick="toggleRepeat('${lesson.id}')">↺ リピート</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+buildUI();
+</script>
+</body>
+</html>
